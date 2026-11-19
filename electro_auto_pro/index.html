@@ -114,6 +114,9 @@ body.closed #side{margin-left:-264px}
 #photo-btn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--muted);flex:none}
 #photo-btn:hover{background:var(--hover);color:var(--ink)}
 #photo-btn.has{background:var(--accent);color:#fff}
+#detail-btn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line)}
+#detail-btn:hover{background:var(--hover);color:var(--ink)}
+#detail-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
 .foot{text-align:center;color:var(--muted);font-size:11.5px;padding:10px 0 4px;line-height:1.5}
 
@@ -213,7 +216,8 @@ body.empty .foot{display:none}
     <div class="box">
       <button id="plus" aria-label="Fiche véhicule" title="Véhicule">+</button>
       <button id="photo-btn" aria-label="Ajouter une photo" title="Photo connecteur / schéma">📷</button>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+      <button id="detail-btn" type="button" aria-label="Autoriser une réponse détaillée" aria-pressed="false" title="Autoriser une réponse détaillée pour le prochain message">D</button>
+      <input type="file" id="photo-input" accept="image/png,image/jpeg,image/webp" capture="environment" style="display:none">
       <textarea id="q" rows="1" placeholder="Posez une question" aria-label="Message"></textarea>
       <button id="go" aria-label="Envoyer" disabled>↑</button>
     </div>
@@ -227,79 +231,14 @@ body.empty .foot{display:none}
 
 const API_URL = "/api/chat";
 
-/* ===== BASE CONNECTEURS LOCALE (12 connecteurs communs) ===== */
-const CONNECTORS_DB = {
-  "OBD2": { pins: 16, desc: "Prise diagnostic standard", layout: [[1,2,3,4,5,6,7,8],[9,10,11,12,13,14,15,16]],
-    pinMap: {4:"Masse châssis", 5:"Masse signal", 6:"CAN High", 7:"K-Line ISO 9141", 14:"CAN Low", 16:"+12V batterie"} },
-  "CAN bus 2 fils": { desc:"Réseau CAN standard 500kbps ou 250kbps", pinMap:{CAN_H:"CAN High (2.5-3.5V repos)", CAN_L:"CAN Low (1.5-2.5V repos)"}, resist:"60Ω entre H et L (2x120Ω)" },
-  "LIN bus": { desc:"Réseau LIN 1 fil 19200bps", pinMap:{LIN:"LIN bus (0-12V, moyenne ~7V)"} },
-  "Relais 4 broches": { pins:4, desc:"Relais automobile standard", pinMap:{30:"+12V permanent", 85:"Bobine masse (commande)", 86:"Bobine +12V", 87:"Contact NO (sortie)", "87a":"Contact NF"} },
-  "Relais 5 broches": { pins:5, desc:"Relais inverseur", pinMap:{30:"Commun", 85:"Bobine -", 86:"Bobine +", 87:"NO", "87a":"NF"} },
-  "Injecteur Bosch EV14": { pins:2, desc:"Injecteur essence", pinMap:{1:"+12V (via relais)", 2:"Commande calculateur (masse pulsée)"}, resist:"12-16Ω typique" },
-  "Capteur MAP 3 fils": { pins:3, desc:"Pression admission", pinMap:{1:"Masse", 2:"Signal 0.5-4.5V", 3:"+5V référence"}, resist:"Vérifier continuité" },
-  "Capteur MAP 4 fils": { pins:4, desc:"Pression + température", pinMap:{1:"Masse", 2:"Signal pression", 3:"+5V", 4:"Signal température (NTC)"} },
-  "Débitmètre MAF 5 fils": { pins:5, desc:"Débitmètre à fil chaud", pinMap:{1:"Signal MAF (0.5-4.5V)", 2:"Masse", 3:"+12V", 4:"Signal temp (IAT)", 5:"Masse signal"} },
-  "Bobine crayon": { pins:2, desc:"Bobine allumage crayon", pinMap:{1:"Commande calculateur (impulsion)", 2:"+12V via relais"}, resist:"Primaire 0.5-1.5Ω, secondaire 5-15kΩ" },
-  "Sonde lambda 4 fils": { pins:4, desc:"Sonde O2 chauffée", pinMap:{1:"Signal", 2:"Masse signal", 3:"Chauffage -", 4:"Chauffage +"}, resist:"Chauffage 6-14Ω" },
-  "Capteur ABS inductif": { pins:2, desc:"Capteur roue passif", pinMap:{1:"Signal", 2:"Masse"}, resist:"1000-2000Ω typique" }
-};
-
-const SYS = `Tu es un expert en électricité et électronique automobile qui assiste des professionnels (chefs d'atelier, électriciens auto, techniciens). Réponds en français technique, précis et direct.
-
-Couverture : tous types de pannes (réseaux CAN/LIN/FlexRay/Ethernet, multiplexage, calculateurs, capteurs/actionneurs, éclairage, faisceaux, connecteurs, masses, démarrage, charge, batterie, fuites de courant, injection/allumage, confort, ADAS, hybride et électrique).
-
-Méthode :
-1. Si le véhicule manque et que cela change la réponse, demande-le brièvement tout en donnant une première piste générique.
-2. Causes probables classées par probabilité, puis plan de test ordonné (point de mesure, outil, conditions, valeur attendue, conclusion si hors valeur).
-3. Connecteurs : brochage, fonctions, couleurs typiques, valeurs attendues, points de contrôle. Tableaux Markdown.
-4. DTC : signification, conditions d'activation, causes fréquentes, tests.
-5. Propose la suite si le test échoue.
-
-=== BASE CONNECTEURS CONNUE (utilise ces données quand c'est pertinent, ne les invente pas) ===
-${JSON.stringify(CONNECTORS_DB, null, 2)}
-
-=== SCHÉMAS ET DIAGRAMMES ===
-Tu DOIS produire des schémas visuels quand c'est pertinent (circuit électrique, brochage, arbre de diagnostic, séquence de test). Utilise ces 3 formats :
-
-**A. Schéma de circuit électrique → code SVG**
-Quand tu décris un circuit (alimentation, fusible, relais, masse, calculateur, capteur), génère un bloc \`\`\`svg avec un schéma propre :
-- Fond transparent, viewBox 0 0 600 300 (ou plus grand si besoin)
-- Boîtes rectangulaires avec bord arrondi pour composants (stroke #1f1e1d, fill #faf9f5)
-- Fils colorés selon code : rouge=B+, noir=masse, jaune, vert, bleu, orange
-- Labels texte 12px lisibles, pin numbers sur connecteurs
-- Flèches pour sens du courant
-- Légende en bas si plusieurs couleurs
-
-**B. Arbre de diagnostic / organigramme → Mermaid**
-Utilise \`\`\`mermaid avec flowchart TD :
-\`\`\`mermaid
-flowchart TD
-  A[Défaut P0087] --> B{Basse pression ?}
-  B -->|Oui| C[Vérifier filtre]
-  B -->|Non| D[Vérifier capteur rail]
-\`\`\`
-
-**C. Brochage connecteur → tableau Markdown + mini-SVG si < 12 pins**
-
-Règles schémas :
-- SVG AUTONOME (pas de CSS externe), toujours viewBox responsive
-- Contraste suffisant atelier (fond clair, traits foncés)
-- Ne JAMAIS inventer un brochage réel : si incertain, schéma typique générique avec mention « à vérifier schéma constructeur »
-- Pour schémas >8 composants, privilégie schéma bloc simplifié + tableau détail
-- Si une photo est fournie : décris ce que tu vois, compare au brochage connu, signale les anomalies (broche tordue, corrosion, joint manquant)
-
-Règles d'exactitude :
-- N'invente jamais un brochage, couleur, fusible ou valeur spécifique. Si incertain : « À vérifier sur le schéma constructeur » + valeur typique générique.
-- Distingue : fait établi / valeur typique / hypothèse.
-- HT : rappelle habilitation et consignation.
-- Réponses structurées, lisibles sur téléphone en atelier.`;
-
-
 const SUGG = ["Défaut réseau CAN","Brochage connecteur","Consommation parasite","Interpréter un DTC","Batterie qui se décharge"];
 const $ = id => document.getElementById(id);
 const log = $("log"), sc = $("scroll"), q = $("q"), go = $("go");
 const V = ["v1","v2","v3","v4","v5"].map($);
-let chats = [], cur = null, busy = false, photoData = null;
+let chats = [], cur = null, busy = false, photoData = null, detailedMode = false;
+const detailBtn = $("detail-btn");
+function setDetailedMode(value){ detailedMode=!!value; detailBtn.classList.toggle("active",detailedMode); detailBtn.setAttribute("aria-pressed",String(detailedMode)); detailBtn.title=detailedMode?"Réponse détaillée autorisée pour le prochain message":"Autoriser une réponse détaillée pour le prochain message"; }
+detailBtn.addEventListener("click",()=>setDetailedMode(!detailedMode));
 const KEY = "ea_chats_v6", VK = "ea_veh_v6";
 
 function load(){
@@ -322,6 +261,56 @@ const vehText = () => {
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const inl = s => esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
 
+function sanitizeSvg(source){
+  if(typeof source !== "string" || source.length > 30000) return "";
+  try{
+    const doc = new DOMParser().parseFromString(source, "image/svg+xml");
+    if(doc.querySelector("parsererror")) return "";
+    const root = doc.documentElement;
+    if(!root || root.localName.toLowerCase() !== "svg") return "";
+    const allowedTags = new Set(["svg","g","rect","circle","ellipse","line","polyline","polygon","path","text","tspan"]);
+    const allowedAttrs = new Set(["viewBox","width","height","x","y","x1","y1","x2","y2","cx","cy","r","rx","ry","d","points","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","stroke-dasharray","opacity","fill-opacity","stroke-opacity","transform","font-size","font-family","font-weight","text-anchor","dominant-baseline"]);
+    const colorAttrs = new Set(["fill","stroke"]);
+    const numericAttrs = new Set(["width","height","x","y","x1","y1","x2","y2","cx","cy","r","rx","ry","stroke-width","opacity","fill-opacity","stroke-opacity","font-size"]);
+    const colorOk = v => /^(none|currentColor|#[0-9a-f]{3,8}|[a-z]{1,20}|rgba?\([0-9.,%\s]+\))$/i.test(v);
+    const visit = node => {
+      for(const child of [...node.children]){
+        const tag = child.localName.toLowerCase();
+        if(!allowedTags.has(tag)){ child.remove(); continue; }
+        for(const attr of [...child.attributes]){
+          const name = attr.name;
+          const value = attr.value.trim();
+          let ok = allowedAttrs.has(name);
+          if(!ok || /^on/i.test(name) || /href|style|class|id|xmlns/i.test(name) || /javascript:|data:|https?:|url\s*\(|expression|[<>]/i.test(value)){
+            child.removeAttribute(name); continue;
+          }
+          if(colorAttrs.has(name) && !colorOk(value)) child.removeAttribute(name);
+          else if(numericAttrs.has(name) && !/^[0-9.,%+\-\s]+$/.test(value)) child.removeAttribute(name);
+          else if(name === "viewBox" && !/^[0-9.,+\-\s]+$/.test(value)) child.removeAttribute(name);
+          else if(name === "transform" && !/^(translate|scale|rotate)\([0-9.,+\-\s]+\)$/.test(value)) child.removeAttribute(name);
+          else if(name === "font-family" && !/^[a-z0-9 ,_-]{1,60}$/i.test(value)) child.removeAttribute(name);
+          else if(["stroke-linecap","stroke-linejoin","font-weight","text-anchor","dominant-baseline"].includes(name) && !/^[a-z0-9_-]{1,24}$/i.test(value)) child.removeAttribute(name);
+          else if(name === "stroke-dasharray" && !/^[0-9.,\s-]{1,80}$/.test(value)) child.removeAttribute(name);
+          else if(name === "points" && !/^[0-9.,\s+\-]+$/.test(value)) child.removeAttribute(name);
+          else if(name === "d" && !/^[MmLlHhVvCcSsQqTtAaZz0-9.,\s+\-]+$/.test(value)) child.removeAttribute(name);
+        }
+        visit(child);
+      }
+    };
+    // Sanitize the root SVG attributes too (including onload and external references).
+    for(const attr of [...root.attributes]){
+      const name=attr.name, value=attr.value.trim();
+      if(!["viewBox","width","height"].includes(name) || /javascript:|data:|https?:|url\s*\(|[<>]/i.test(value)) root.removeAttribute(name);
+      else if(name === "viewBox" && !/^[0-9.,+\-\s]+$/.test(value)) root.removeAttribute(name);
+      else if(["width","height"].includes(name) && !/^[0-9.,%+\-\s]+$/.test(value)) root.removeAttribute(name);
+    }
+    visit(root);
+    if(!root.hasAttribute("viewBox") && !(root.hasAttribute("width") && root.hasAttribute("height"))) return "";
+    root.setAttribute("role","img");
+    return new XMLSerializer().serializeToString(root);
+  }catch(_){ return ""; }
+}
+
 function md(src){
   const lines = String(src || "").split("\n");
   let out = "", list = null, i = 0;
@@ -339,10 +328,9 @@ function md(src){
         const id = "m_" + Math.random().toString(36).slice(2,9);
         out += `<div class="mermaid-wrap"><div class="mermaid" id="${id}">${esc(code)}</div></div>`;
       } else if(kind === "svg"){
-        const clean = code.replace(/<script[\s\S]*?<\/script>/gi,"")
-          .replace(/\son\w+\s*=\s*"[^"]*"/gi,"").replace(/\son\w+\s*=\s*'[^']*'/gi,"")
-          .replace(/javascript:/gi,"");
-        out += `<div class="schema-wrap"><div class="schema-toolbar"><span class="title">📐 Schéma</span></div><div class="schema-viewport">${clean}</div></div>`;
+        const clean = sanitizeSvg(code);
+        if(clean) out += `<div class="schema-wrap"><div class="schema-toolbar"><span class="title">📐 Schéma sécurisé</span></div><div class="schema-viewport">${clean}</div></div>`;
+        else out += `<pre class="code-block">${esc(code)}</pre>`;
       } else out += `<pre class="code-block">${esc(code)}</pre>`;
       continue;
     }
@@ -430,6 +418,8 @@ async function send(){
   if(!cur) newChat();
   const image=photoData;
   const vehicle=vehText();
+  const detailed=detailedMode;
+  setDetailedMode(false);
   const visibleText=(text || "Analyse cette photo.") + (vehicle!=="Non renseigné" ? "\n\nVéhicule : "+vehicle : "");
   addMessage("user", visibleText);
   q.value=""; q.style.height="auto";
@@ -442,7 +432,7 @@ async function send(){
     const history=chat.messages.slice(-20).map(m=>({role:m.role,content:m.text}));
     const response=await fetch("/api/chat",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:text || "Analyse cette photo et identifie les éléments visibles.",vehicle,history,image,systemPrompt:SYS})
+      body:JSON.stringify({message:text || "Analyse cette photo et identifie les éléments visibles.",vehicle,history,image,detailed})
     });
     const data=await response.json();
     if(!response.ok) throw new Error(data.error || "Erreur du serveur");
@@ -465,7 +455,7 @@ $("plus").addEventListener("click",()=> $("vp").classList.toggle("open"));
 $("photo-btn").addEventListener("click",()=> $("photo-input").click());
 $("photo-input").addEventListener("change",e=>{
   const file=e.target.files && e.target.files[0]; if(!file) return;
-  if(!file.type.startsWith("image/")) return alert("Choisissez une image.");
+  if(!["image/png","image/jpeg","image/webp"].includes(file.type)) return alert("Format accepté : PNG, JPG ou WebP.");
   if(file.size>8*1024*1024) return alert("Image trop volumineuse (maximum 8 Mo).");
   const reader=new FileReader();
   reader.onload=()=>{photoData=reader.result;$("photo-img").src=photoData;$("photo-preview").classList.add("show");$("photo-btn").classList.add("has");go.disabled=busy||(!q.value.trim()&&!photoData);};
