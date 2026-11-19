@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf9f5">
+<title>Électro Auto</title>
+<style>
+:root{
+  --bg:#faf9f5; --side:#f0eee6; --panel:#ffffff;
+  --ink:#1f1e1d; --muted:#6b6862; --line:#e8e6df; --hover:#e9e6dc;
+  --bubble-user:#f0eee6; --accent:#c96442; --accent-hover:#b55638;
+  --code:#f5f3ee; --shadow:0 1px 2px rgba(31,30,29,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#262624; --side:#1f1e1d; --panel:#30302e;
+    --ink:#f5f4ef; --muted:#a8a49b; --line:#3d3c38;
+    --hover:#35342f; --bubble-user:#35342f; --code:#3a3935;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 16px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  display:flex; overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#side{width:264px;background:var(--side);display:flex;flex-direction:column;padding:12px;flex:none;transition:transform .2s,margin .2s}
+body.closed #side{margin-left:-264px}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 14px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;letter-spacing:-.2px;color:var(--ink)}
+.logo .mark{width:26px;height:26px;border-radius:6px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:700}
+.ib{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;color:var(--muted);font-size:16px}
+.ib:hover{background:var(--hover);color:var(--ink)}
+.nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-size:14px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.nav:hover{background:var(--hover)}
+.nav .ico{width:18px;text-align:center;opacity:.7}
+.lbl{color:var(--muted);font-size:12px;font-weight:500;padding:18px 10px 6px;letter-spacing:.2px}
+#hist{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px}
+#hist::-webkit-scrollbar{width:6px}
+#hist::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.hi{display:flex;align-items:center;border-radius:8px;margin-bottom:1px}
+.hi:hover,.hi.on{background:var(--hover)}
+.hi .t{flex:1;text-align:left;padding:8px 10px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.hi .x{color:var(--muted);padding:6px 10px;font-size:12px;opacity:0}
+.hi:hover .x,.hi.on .x{opacity:1}
+.me{display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink);font-weight:500}
+.me .avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.me .badge{margin-left:auto;font-size:10.5px;font-weight:600;background:var(--ink);color:var(--bg);padding:2px 6px;border-radius:4px;letter-spacing:.3px}
+
+#main{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+#top{display:flex;align-items:center;gap:8px;padding:10px 16px;min-height:56px}
+#model{font-size:15px;font-weight:600;padding:6px 10px;border-radius:8px;color:var(--ink);display:flex;align-items:center;gap:6px}
+#model:hover{background:var(--hover)}
+#model::after{content:"▾";font-size:11px;color:var(--muted);margin-left:2px}
+#top .spacer{flex:1}
+
+#scroll{flex:1;overflow-y:auto;scroll-behavior:smooth}
+#scroll::-webkit-scrollbar{width:8px}
+#scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.col{max-width:760px;margin:0 auto;padding:0 20px}
+
+.row{margin:24px 0}
+.row.u{display:flex;justify-content:flex-end}
+.bub{background:var(--bubble-user);color:var(--ink);padding:12px 20px;border-radius:18px;max-width:78%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.55}
+.body{overflow-wrap:anywhere;font-size:16px;line-height:1.7;color:var(--ink)}
+.body p{margin:.85em 0}.body ul,.body ol{margin:.85em 0;padding-left:1.6em}.body li{margin:.35em 0}
+.body h3{font-size:17px;font-weight:700;margin:1.4em 0 .5em;letter-spacing:-.1px}
+.body code{background:var(--code);padding:2px 6px;border-radius:4px;font-size:.88em;font-family:ui-monospace,"SF Mono",Monaco,monospace}
+.body strong{font-weight:600}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px}
+.body table{border-collapse:collapse;font-size:14.5px;min-width:100%}
+.body th,.body td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.body th{font-weight:600;background:var(--side);white-space:nowrap;color:var(--ink)}
+.body tr:last-child td{border-bottom:0}
+
+.acts{display:flex;gap:2px;margin-top:10px;margin-left:-6px;flex-wrap:wrap}
+.acts button{color:var(--muted);font-size:12.5px;padding:5px 8px;border-radius:6px;font-weight:500}
+.acts button:hover{background:var(--hover);color:var(--ink)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:p 1.1s infinite;vertical-align:middle;margin-top:8px}
+@keyframes p{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.err{color:#b55638;font-size:14px;margin:12px 0;padding:12px 16px;background:rgba(201,100,66,.08);border-radius:10px}
+
+#dock{padding:0 16px 14px}
+#dock .in{max-width:760px;margin:0 auto;position:relative}
+#vp{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;grid-template-columns:1fr 1fr;gap:10px;box-shadow:var(--shadow)}
+#vp.open{display:grid}
+#vp .full{grid-column:1/-1}
+#vp input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
+#vp input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,100,66,.12)}
+#vp input::placeholder{color:var(--muted)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:8px 8px 8px 6px;display:flex;align-items:flex-end;gap:4px;box-shadow:0 2px 8px rgba(31,30,29,.04);transition:border-color .15s,box-shadow .15s}
+.box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,100,66,.1)}
+#q{flex:1;border:0;outline:0;resize:none;background:none;color:var(--ink);font:inherit;max-height:200px;padding:10px 8px;line-height:1.5;font-size:16px}
+#q::placeholder{color:var(--muted)}
+#go{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:700;flex:none;transition:background .15s,transform .1s}
+#go:hover:not(:disabled){background:var(--accent-hover)}
+#go:active{transform:scale(.94)}
+#go:disabled{opacity:.3;cursor:default}
+#plus{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:var(--muted);flex:none}
+#plus:hover{background:var(--hover);color:var(--ink)}
+#plus.set{background:var(--accent);color:#fff}
+#plus.set:hover{background:var(--accent-hover)}
+#photo-btn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--muted);flex:none}
+#photo-btn:hover{background:var(--hover);color:var(--ink)}
+#photo-btn.has{background:var(--accent);color:#fff}
+
+.foot{text-align:center;color:var(--muted);font-size:11.5px;padding:10px 0 4px;line-height:1.5}
+
+body.empty #scroll{display:none}
+body.empty #main{justify-content:center}
+body.empty #top{position:absolute;top:0;left:0;right:0}
+#hero{display:none;text-align:center;margin:0 20px 32px}
+body.empty #hero{display:block}
+#hero .h-mark{width:48px;height:48px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:26px;margin:0 auto 20px}
+#hero h1{font-size:28px;font-weight:600;margin:0;letter-spacing:-.6px;color:var(--ink)}
+body.empty #dock{padding-bottom:0}
+#sugg{display:none;max-width:760px;margin:16px auto 0;flex-wrap:wrap;gap:8px;justify-content:center}
+body.empty #sugg{display:flex}
+.sg{border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13.5px;color:var(--ink);background:var(--panel);font-weight:500;transition:all .15s}
+.sg:hover{background:var(--hover);border-color:var(--muted)}
+body.empty .foot{display:none}
+#shade{display:none}
+
+/* ==== SCHÉMAS SVG ==== */
+.schema-wrap{margin:1.2em 0;background:#faf9f5;border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+.schema-toolbar{display:flex;align-items:center;gap:4px;padding:8px 10px;background:var(--side);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.schema-toolbar .title{flex:1;font-weight:600;color:var(--ink)}
+.schema-toolbar button{padding:5px 9px;border-radius:6px;font-size:12px;font-weight:500;color:var(--muted)}
+.schema-toolbar button:hover{background:var(--hover);color:var(--ink)}
+.schema-viewport{overflow:hidden;cursor:grab;touch-action:none;max-height:520px;display:flex;align-items:center;justify-content:center;padding:16px}
+.schema-viewport.dragging{cursor:grabbing}
+.schema-viewport svg{display:block;max-width:100%;height:auto;transition:transform .1s ease-out;transform-origin:center center}
+.schema-wrap.dark-mode{background:#0f0e0d}
+.schema-wrap.dark-mode .schema-viewport svg{filter:invert(1) hue-rotate(180deg) brightness(1.1)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .schema-wrap{background:#1a1918}
+}
+
+/* ==== MERMAID ==== */
+.mermaid-wrap{margin:1.2em 0;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow-x:auto;text-align:center}
+.mermaid{display:inline-block;min-width:200px}
+
+/* ==== CODE BLOCK ==== */
+.code-block{margin:1.2em 0;padding:14px 16px;background:var(--code);border:1px solid var(--line);border-radius:10px;overflow-x:auto;font-family:ui-monospace,"SF Mono",Monaco,monospace;font-size:13px;line-height:1.55;color:var(--ink);white-space:pre}
+
+/* ==== PHOTO PREVIEW ==== */
+#photo-preview{display:none;margin-bottom:10px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;position:relative}
+#photo-preview.show{display:block}
+#photo-preview img{display:block;max-width:100%;max-height:240px;border-radius:8px;margin:0 auto}
+#photo-preview .close-photo{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;font-size:14px}
+#photo-preview .caption{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+
+@media (max-width:860px){
+  #side{position:fixed;z-index:20;inset:0 auto 0 0;margin-left:0!important;transform:translateX(-100%);width:280px;padding-top:calc(12px + env(safe-area-inset-top,0px));box-shadow:2px 0 20px rgba(0,0,0,.15)}
+  body.open #side{transform:none}
+  body.open #shade{display:block;position:fixed;inset:0;background:rgba(31,30,29,.4);z-index:15}
+  #hero h1{font-size:22px}
+  #hero .h-mark{width:42px;height:42px;font-size:22px}
+}
+</style>
+</head>
+<body>
+<aside id="side">
+  <div class="sb">
+    <div class="logo"><span class="mark">⚡</span>Électro Auto</div>
+    <button class="ib" id="close" aria-label="Fermer">✕</button>
+  </div>
+  <button class="nav" id="newc"><span class="ico">✎</span>Nouvelle conversation</button>
+  <div class="lbl">Récents</div>
+  <div id="hist"></div>
+  <div class="me">
+    <div class="avatar">EA</div>
+    Électro Auto
+    <span class="badge">PRO</span>
+  </div>
+</aside>
+<div id="shade"></div>
+<section id="main">
+  <div id="top">
+    <button class="ib" id="burger" aria-label="Menu">☰</button>
+    <button id="model">Électro Auto Pro</button>
+    <div class="spacer"></div>
+  </div>
+  <div id="scroll"><div class="col" id="log"></div></div>
+  <div id="hero">
+    <div class="h-mark">⚡</div>
+    <h1>Quelle panne sur l'établi ?</h1>
+  </div>
+  <div id="dock"><div class="in">
+    <div id="vp">
+      <input id="v1" placeholder="Marque" autocomplete="off">
+      <input id="v2" placeholder="Modèle" autocomplete="off">
+      <input id="v3" placeholder="Année" inputmode="numeric" autocomplete="off">
+      <input id="v4" placeholder="Motorisation" autocomplete="off">
+      <input id="v5" class="full" placeholder="VIN, DTC, précisions (facultatif)" autocomplete="off">
+    </div>
+    <div id="photo-preview">
+      <button class="close-photo" id="close-photo" aria-label="Retirer">✕</button>
+      <img id="photo-img" alt="Photo connecteur">
+      <div class="caption">Photo jointe — l'IA l'analysera avec votre question</div>
+    </div>
+    <div class="box">
+      <button id="plus" aria-label="Fiche véhicule" title="Véhicule">+</button>
+      <button id="photo-btn" aria-label="Ajouter une photo" title="Photo connecteur / schéma">📷</button>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+      <textarea id="q" rows="1" placeholder="Posez une question" aria-label="Message"></textarea>
+      <button id="go" aria-label="Envoyer" disabled>↑</button>
+    </div>
+    <div id="sugg"></div>
+    <div class="foot">L'IA peut faire des erreurs. Vérifiez brochages et valeurs sur le schéma constructeur.</div>
+  </div></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+
+const API_URL = "/api/chat";
+
+/* ===== BASE CONNECTEURS LOCALE (12 connecteurs communs) ===== */
+const CONNECTORS_DB = {
+  "OBD2": { pins: 16, desc: "Prise diagnostic standard", layout: [[1,2,3,4,5,6,7,8],[9,10,11,12,13,14,15,16]],
+    pinMap: {4:"Masse châssis", 5:"Masse signal", 6:"CAN High", 7:"K-Line ISO 9141", 14:"CAN Low", 16:"+12V batterie"} },
+  "CAN bus 2 fils": { desc:"Réseau CAN standard 500kbps ou 250kbps", pinMap:{CAN_H:"CAN High (2.5-3.5V repos)", CAN_L:"CAN Low (1.5-2.5V repos)"}, resist:"60Ω entre H et L (2x120Ω)" },
+  "LIN bus": { desc:"Réseau LIN 1 fil 19200bps", pinMap:{LIN:"LIN bus (0-12V, moyenne ~7V)"} },
+  "Relais 4 broches": { pins:4, desc:"Relais automobile standard", pinMap:{30:"+12V permanent", 85:"Bobine masse (commande)", 86:"Bobine +12V", 87:"Contact NO (sortie)", "87a":"Contact NF"} },
+  "Relais 5 broches": { pins:5, desc:"Relais inverseur", pinMap:{30:"Commun", 85:"Bobine -", 86:"Bobine +", 87:"NO", "87a":"NF"} },
+  "Injecteur Bosch EV14": { pins:2, desc:"Injecteur essence", pinMap:{1:"+12V (via relais)", 2:"Commande calculateur (masse pulsée)"}, resist:"12-16Ω typique" },
+  "Capteur MAP 3 fils": { pins:3, desc:"Pression admission", pinMap:{1:"Masse", 2:"Signal 0.5-4.5V", 3:"+5V référence"}, resist:"Vérifier continuité" },
+  "Capteur MAP 4 fils": { pins:4, desc:"Pression + température", pinMap:{1:"Masse", 2:"Signal pression", 3:"+5V", 4:"Signal température (NTC)"} },
+  "Débitmètre MAF 5 fils": { pins:5, desc:"Débitmètre à fil chaud", pinMap:{1:"Signal MAF (0.5-4.5V)", 2:"Masse", 3:"+12V", 4:"Signal temp (IAT)", 5:"Masse signal"} },
+  "Bobine crayon": { pins:2, desc:"Bobine allumage crayon", pinMap:{1:"Commande calculateur (impulsion)", 2:"+12V via relais"}, resist:"Primaire 0.5-1.5Ω, secondaire 5-15kΩ" },
+  "Sonde lambda 4 fils": { pins:4, desc:"Sonde O2 chauffée", pinMap:{1:"Signal", 2:"Masse signal", 3:"Chauffage -", 4:"Chauffage +"}, resist:"Chauffage 6-14Ω" },
+  "Capteur ABS inductif": { pins:2, desc:"Capteur roue passif", pinMap:{1:"Signal", 2:"Masse"}, resist:"1000-2000Ω typique" }
+};
+
+const SYS = `Tu es un expert en électricité et électronique automobile qui assiste des professionnels (chefs d'atelier, électriciens auto, techniciens). Réponds en français technique, précis et direct.
+
+Couverture : tous types de pannes (réseaux CAN/LIN/FlexRay/Ethernet, multiplexage, calculateurs, capteurs/actionneurs, éclairage, faisceaux, connecteurs, masses, démarrage, charge, batterie, fuites de courant, injection/allumage, confort, ADAS, hybride et électrique).
+
+Méthode :
+1. Si le véhicule manque et que cela change la réponse, demande-le brièvement tout en donnant une première piste générique.
+2. Causes probables classées par probabilité, puis plan de test ordonné (point de mesure, outil, conditions, valeur attendue, conclusion si hors valeur).
+3. Connecteurs : brochage, fonctions, couleurs typiques, valeurs attendues, points de contrôle. Tableaux Markdown.
+4. DTC : signification, conditions d'activation, causes fréquentes, tests.
+5. Propose la suite si le test échoue.
+
+=== BASE CONNECTEURS CONNUE (utilise ces données quand c'est pertinent, ne les invente pas) ===
+${JSON.stringify(CONNECTORS_DB, null, 2)}
+
+=== SCHÉMAS ET DIAGRAMMES ===
+Tu DOIS produire des schémas visuels quand c'est pertinent (circuit électrique, brochage, arbre de diagnostic, séquence de test). Utilise ces 3 formats :
+
+**A. Schéma de circuit électrique → code SVG**
+Quand tu décris un circuit (alimentation, fusible, relais, masse, calculateur, capteur), génère un bloc \`\`\`svg avec un schéma propre :
+- Fond transparent, viewBox 0 0 600 300 (ou plus grand si besoin)
+- Boîtes rectangulaires avec bord arrondi pour composants (stroke #1f1e1d, fill #faf9f5)
+- Fils colorés selon code : rouge=B+, noir=masse, jaune, vert, bleu, orange
+- Labels texte 12px lisibles, pin numbers sur connecteurs
+- Flèches pour sens du courant
+- Légende en bas si plusieurs couleurs
+
+**B. Arbre de diagnostic / organigramme → Mermaid**
+Utilise \`\`\`mermaid avec flowchart TD :
+\`\`\`mermaid
+flowchart TD
+  A[Défaut P0087] --> B{Basse pression ?}
+  B -->|Oui| C[Vérifier filtre]
+  B -->|Non| D[Vérifier capteur rail]
+\`\`\`
+
+**C. Brochage connecteur → tableau Markdown + mini-SVG si < 12 pins**
+
+Règles schémas :
+- SVG AUTONOME (pas de CSS externe), toujours viewBox responsive
+- Contraste suffisant atelier (fond clair, traits foncés)
+- Ne JAMAIS inventer un brochage réel : si incertain, schéma typique générique avec mention « à vérifier schéma constructeur »
+- Pour schémas >8 composants, privilégie schéma bloc simplifié + tableau détail
+- Si une photo est fournie : décris ce que tu vois, compare au brochage connu, signale les anomalies (broche tordue, corrosion, joint manquant)
+
+Règles d'exactitude :
+- N'invente jamais un brochage, couleur, fusible ou valeur spécifique. Si incertain : « À vérifier sur le schéma constructeur » + valeur typique générique.
+- Distingue : fait établi / valeur typique / hypothèse.
+- HT : rappelle habilitation et consignation.
+- Réponses structurées, lisibles sur téléphone en atelier.`;
+
+
+const SUGG = ["Défaut réseau CAN","Brochage connecteur","Consommation parasite","Interpréter un DTC","Batterie qui se décharge"];
+const $ = id => document.getElementById(id);
+const log = $("log"), sc = $("scroll"), q = $("q"), go = $("go");
+const V = ["v1","v2","v3","v4","v5"].map($);
+let chats = [], cur = null, busy = false, photoData = null;
+const KEY = "ea_chats_v6", VK = "ea_veh_v6";
+
+function load(){
+  try { chats = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) { chats = []; }
+  try { (JSON.parse(localStorage.getItem(VK)) || []).forEach((v,i) => { if(V[i]) V[i].value = v || ""; }); } catch(e) {}
+  renderHistory();
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(chats.slice(0,50))); } catch(e) {} }
+function saveV(){
+  try { localStorage.setItem(VK, JSON.stringify(V.map(i => i.value))); } catch(e) {}
+  $("plus").classList.toggle("set", V.some(i => i.value.trim()));
+}
+V.forEach(i => i.addEventListener("input", saveV));
+
+const vehText = () => {
+  const [a,b,c,d,e] = V.map(i => i.value.trim());
+  const p = [a&&"Marque : "+a, b&&"Modèle : "+b, c&&"Année : "+c, d&&"Moteur : "+d, e&&"Précisions : "+e].filter(Boolean);
+  return p.length ? p.join(" | ") : "Non renseigné";
+};
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const inl = s => esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+
+function md(src){
+  const lines = String(src || "").split("\n");
+  let out = "", list = null, i = 0;
+  const closeList = () => { if(list){ out += `</${list}>`; list = null; } };
+  while(i < lines.length){
+    const line = lines[i];
+    if(/^```/.test(line.trim())){
+      closeList();
+      const kind = line.trim().slice(3).trim().toLowerCase();
+      const buf = []; i++;
+      while(i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      const code = buf.join("\n");
+      if(kind === "mermaid"){
+        const id = "m_" + Math.random().toString(36).slice(2,9);
+        out += `<div class="mermaid-wrap"><div class="mermaid" id="${id}">${esc(code)}</div></div>`;
+      } else if(kind === "svg"){
+        const clean = code.replace(/<script[\s\S]*?<\/script>/gi,"")
+          .replace(/\son\w+\s*=\s*"[^"]*"/gi,"").replace(/\son\w+\s*=\s*'[^']*'/gi,"")
+          .replace(/javascript:/gi,"");
+        out += `<div class="schema-wrap"><div class="schema-toolbar"><span class="title">📐 Schéma</span></div><div class="schema-viewport">${clean}</div></div>`;
+      } else out += `<pre class="code-block">${esc(code)}</pre>`;
+      continue;
+    }
+    const tableRow = /^\s*\|.*\|\s*$/.test(line);
+    if(tableRow && i+1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i+1])){
+      closeList();
+      const cells = s => s.trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim());
+      out += '<div class="tw"><table><thead><tr>' + cells(line).map(c=>`<th>${inl(c)}</th>`).join("") + '</tr></thead><tbody>';
+      i += 2;
+      while(i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){
+        out += "<tr>" + cells(lines[i]).map(c=>`<td>${inl(c)}</td>`).join("") + "</tr>";
+        i++;
+      }
+      out += "</tbody></table></div>";
+      continue;
+    }
+    let m;
+    if((m = line.match(/^\s*#{1,4}\s+(.*)/))){ closeList(); out += `<h3>${inl(m[1])}</h3>`; }
+    else if((m = line.match(/^\s*[-*•]\s+(.*)/))){
+      if(list !== "ul"){ closeList(); out += "<ul>"; list = "ul"; }
+      out += `<li>${inl(m[1])}</li>`;
+    } else if((m = line.match(/^\s*\d+[.)]\s+(.*)/))){
+      if(list !== "ol"){ closeList(); out += "<ol>"; list = "ol"; }
+      out += `<li>${inl(m[1])}</li>`;
+    } else if(!line.trim()){ closeList(); }
+    else { closeList(); out += `<p>${inl(line)}</p>`; }
+    i++;
+  }
+  closeList();
+  return out;
+}
+
+function renderHistory(){
+  const hist = $("hist");
+  hist.innerHTML = "";
+  chats.forEach(chat => {
+    const row = document.createElement("div");
+    row.className = "hi" + (chat.id === cur ? " on" : "");
+    const b = document.createElement("button");
+    b.className = "t"; b.textContent = chat.title || "Nouvelle conversation";
+    b.onclick = () => openChat(chat.id);
+    const x = document.createElement("button");
+    x.className = "x"; x.textContent = "✕"; x.title = "Supprimer";
+    x.onclick = e => { e.stopPropagation(); chats = chats.filter(c=>c.id!==chat.id); if(cur===chat.id) newChat(); save(); renderHistory(); };
+    row.append(b,x); hist.append(row);
+  });
+}
+function renderChat(){
+  log.innerHTML = "";
+  const chat = chats.find(c=>c.id===cur);
+  if(chat) chat.messages.forEach(m=>{
+    const row = document.createElement("div"); row.className = "row " + (m.role==="user"?"u":"");
+    if(m.role==="user"){
+      const bub = document.createElement("div"); bub.className="bub"; bub.textContent=m.text; row.append(bub);
+    } else {
+      const body = document.createElement("div"); body.className="body"; body.innerHTML=md(m.text); row.append(body);
+    }
+    log.append(row);
+  });
+  document.body.classList.toggle("empty", !chat || !chat.messages.length);
+  if(window.mermaid) {
+    try { mermaid.run({querySelector:".mermaid"}); } catch(e) {}
+  }
+  sc.scrollTop = sc.scrollHeight;
+}
+function newChat(){
+  cur = "c_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+  chats.unshift({id:cur,title:"Nouvelle conversation",messages:[]});
+  save(); renderHistory(); renderChat(); q.focus();
+}
+function openChat(id){ cur=id; renderHistory(); renderChat(); }
+function addMessage(role,text){
+  const chat = chats.find(c=>c.id===cur);
+  chat.messages.push({role,text});
+  if(role==="user" && chat.title==="Nouvelle conversation") chat.title=text.slice(0,42) || "Diagnostic automobile";
+  save(); renderHistory(); renderChat();
+}
+function setBusy(v){
+  busy=v; go.disabled=v || (!q.value.trim() && !photoData);
+  go.textContent=v?"…":"↑";
+}
+async function send(){
+  const text=q.value.trim();
+  if(busy || (!text && !photoData)) return;
+  if(!cur) newChat();
+  const image=photoData;
+  const vehicle=vehText();
+  const visibleText=(text || "Analyse cette photo.") + (vehicle!=="Non renseigné" ? "\n\nVéhicule : "+vehicle : "");
+  addMessage("user", visibleText);
+  q.value=""; q.style.height="auto";
+  photoData=null; $("photo-preview").classList.remove("show"); $("photo-img").src="";
+  setBusy(true);
+  const waiting=document.createElement("div"); waiting.className="row"; waiting.id="waiting";
+  waiting.innerHTML='<span class="dot"></span>'; log.append(waiting); sc.scrollTop=sc.scrollHeight;
+  try{
+    const chat=chats.find(c=>c.id===cur);
+    const history=chat.messages.slice(-20).map(m=>({role:m.role,content:m.text}));
+    const response=await fetch("/api/chat",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text || "Analyse cette photo et identifie les éléments visibles.",vehicle,history,image,systemPrompt:SYS})
+    });
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error || "Erreur du serveur");
+    addMessage("assistant",data.answer || "Je n'ai pas reçu de réponse exploitable.");
+  }catch(err){
+    addMessage("assistant","**Connexion indisponible.** "+err.message+"\n\nVérifiez que le serveur IA est démarré et que la clé API est configurée.");
+  }finally{
+    const w=$("waiting"); if(w) w.remove();
+    setBusy(false); renderChat();
+  }
+}
+q.addEventListener("input",()=>{q.style.height="auto";q.style.height=Math.min(q.scrollHeight,200)+"px";go.disabled=busy || (!q.value.trim()&&!photoData);});
+q.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
+go.addEventListener("click",send);
+$("newc").addEventListener("click",()=>{newChat();document.body.classList.remove("open");});
+$("burger").addEventListener("click",()=>document.body.classList.toggle("open"));
+$("close").addEventListener("click",()=>document.body.classList.remove("open"));
+$("shade").addEventListener("click",()=>document.body.classList.remove("open"));
+$("plus").addEventListener("click",()=> $("vp").classList.toggle("open"));
+$("photo-btn").addEventListener("click",()=> $("photo-input").click());
+$("photo-input").addEventListener("change",e=>{
+  const file=e.target.files && e.target.files[0]; if(!file) return;
+  if(!file.type.startsWith("image/")) return alert("Choisissez une image.");
+  if(file.size>8*1024*1024) return alert("Image trop volumineuse (maximum 8 Mo).");
+  const reader=new FileReader();
+  reader.onload=()=>{photoData=reader.result;$("photo-img").src=photoData;$("photo-preview").classList.add("show");$("photo-btn").classList.add("has");go.disabled=busy||(!q.value.trim()&&!photoData);};
+  reader.readAsDataURL(file);
+});
+$("close-photo").addEventListener("click",()=>{photoData=null;$("photo-input").value="";$("photo-img").src="";$("photo-preview").classList.remove("show");$("photo-btn").classList.remove("has");go.disabled=busy||!q.value.trim();});
+$("sugg").innerHTML=SUGG.map(s=>`<button class="sg" type="button">${esc(s)}</button>`).join("");
+$("sugg").addEventListener("click",e=>{if(e.target.matches(".sg")){q.value=e.target.textContent;q.dispatchEvent(new Event("input"));q.focus();}});
+if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:"neutral",securityLevel:"strict"});}
+load();
+if(!chats.length) newChat(); else {cur=chats[0].id;renderHistory();renderChat();}
+</script>
+</body>
+</html>
